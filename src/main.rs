@@ -48,14 +48,15 @@ impl State {
     pub(crate) fn restart(&mut self) {
         self.mode = GameMode::Playing;
         self.player = Player::new(5, 25.0);
+        self.obstacle = Obstacle::new(SCREEN_WIDTH, 0);
         self.frame_time = 0.0;
+        self.score = 0;
     }
 
     pub(crate) fn playing(&mut self, ctx: &mut BTerm) {
         ctx.cls_bg(NAVY);
-
-        ctx.print(0, 1, "Press Space to Flap");
-        ctx.print(1, 2, &format!("Score {}", self.score));
+        ctx.print(1, 1, "Press Space to Flap");
+        ctx.print_color_centered(1, YELLOW, NAVY, &format!("Score {}", self.score));
 
         self.frame_time += ctx.frame_time_ms;
         if self.frame_time > FRAME_DURATION {
@@ -116,6 +117,8 @@ fn main() -> BError {
     main_loop(context, State::new())
 }
 
+const PLAYER_START_POS_X:i32 = 5;
+
 struct Player {
     x: i32,
     y: f32,
@@ -132,7 +135,7 @@ impl Player {
     }
 
     fn render(&mut self, ctx: &mut BTerm) {
-        ctx.set(5, self.y as i32, YELLOW, BLACK, to_cp437('@'))
+        ctx.set(PLAYER_START_POS_X, self.y as i32, YELLOW, BLACK, to_cp437('@'))
     }
 
     fn gravity_and_move(&mut self) {
@@ -171,7 +174,7 @@ impl Obstacle {
     }
 
     fn render(&mut self, player_x: i32, ctx: &mut BTerm) {
-        let screen_x = self.x - player_x;
+        let screen_x = self.x + PLAYER_START_POS_X - player_x;
 
         let (above_gap, below_gap) = self.above_below_gap();
         self.draw_obstacle(ctx, screen_x, 0..above_gap);
@@ -185,7 +188,7 @@ impl Obstacle {
 
     fn draw_obstacle(&mut self, ctx: &mut BTerm, screen_x: i32, range: Range<i32>) {
         for y in range {
-            ctx.set(screen_x, y, RED, BLACK, to_cp437('|'))
+            ctx.set(screen_x, y, RED, BLACK, to_cp437('#'))
         }
     }
 
@@ -195,7 +198,6 @@ impl Obstacle {
 
         let player_above_gap = (player.y as i32) < above_gap;
         let player_below_gap = (player.y as i32) > below_gap;
-
         does_x_match && (player_above_gap || player_below_gap)
     }
 }
